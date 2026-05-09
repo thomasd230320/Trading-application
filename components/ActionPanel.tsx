@@ -97,10 +97,14 @@ function RecCard({
   rec,
   settings,
   ddCap,
+  onTakeTrade,
+  alreadyOpen,
 }: {
   rec: Recommendation;
   settings: Settings;
   ddCap: number;
+  onTakeTrade?: (rec: Recommendation, units: number) => void;
+  alreadyOpen?: boolean;
 }) {
   const isFractional = rec.symbol.includes('-');
   const pos = calculatePositionSize(rec, settings.accountSize, settings.riskPercent, isFractional);
@@ -167,6 +171,21 @@ function RecCard({
             )}
             <span>{pos.pctOfAccount.toFixed(1)}% of account</span>
           </div>
+          {onTakeTrade && rec.stopLoss != null && (
+            <button
+              onClick={() => onTakeTrade(rec, pos.units)}
+              disabled={alreadyOpen}
+              className={`w-full mt-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                alreadyOpen
+                  ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                  : rec.action === 'BUY'
+                    ? 'bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 border border-emerald-500/40'
+                    : 'bg-red-500/20 text-red-300 hover:bg-red-500/30 border border-red-500/40'
+              }`}
+            >
+              {alreadyOpen ? '✓ Position open' : `Take ${tone.verb.toLowerCase()} trade →`}
+            </button>
+          )}
         </div>
       ) : rec.action === 'HOLD' ? (
         <div className="text-xs text-gray-600">
@@ -197,9 +216,11 @@ interface ActionPanelProps {
   symbols: SymbolData[];
   onRefresh?: () => void;
   refreshing?: boolean;
+  onTakeTrade?: (rec: Recommendation, units: number) => void;
+  openSymbols?: Set<string>;
 }
 
-export default function ActionPanel({ symbols, onRefresh, refreshing = false }: ActionPanelProps) {
+export default function ActionPanel({ symbols, onRefresh, refreshing = false, onTakeTrade, openSymbols }: ActionPanelProps) {
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [hydrated, setHydrated] = useState(false);
 
@@ -325,7 +346,14 @@ export default function ActionPanel({ symbols, onRefresh, refreshing = false }: 
               <div className="text-[11px] uppercase tracking-wider text-emerald-400 font-semibold mb-2">Buy candidates</div>
               <div className="space-y-2">
                 {buys.slice(0, 3).map(r => (
-                  <RecCard key={r.symbol} rec={r} settings={settings} ddCap={ddCap} />
+                  <RecCard
+                    key={r.symbol}
+                    rec={r}
+                    settings={settings}
+                    ddCap={ddCap}
+                    onTakeTrade={onTakeTrade}
+                    alreadyOpen={openSymbols?.has(r.symbol)}
+                  />
                 ))}
               </div>
             </div>
@@ -335,7 +363,14 @@ export default function ActionPanel({ symbols, onRefresh, refreshing = false }: 
               <div className="text-[11px] uppercase tracking-wider text-red-400 font-semibold mb-2">Sell candidates</div>
               <div className="space-y-2">
                 {sells.slice(0, 3).map(r => (
-                  <RecCard key={r.symbol} rec={r} settings={settings} ddCap={ddCap} />
+                  <RecCard
+                    key={r.symbol}
+                    rec={r}
+                    settings={settings}
+                    ddCap={ddCap}
+                    onTakeTrade={onTakeTrade}
+                    alreadyOpen={openSymbols?.has(r.symbol)}
+                  />
                 ))}
               </div>
             </div>

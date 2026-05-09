@@ -21,7 +21,7 @@ export default function TickerSelector({ symbols, onAdd, onRemove }: Props) {
 
   function add(symbol: string) {
     const s = symbol.trim().toUpperCase();
-    if (s && !symbols.includes(s) && symbols.length < 10) {
+    if (s && !symbols.includes(s) && symbols.length < 15) {
       onAdd(s);
       setInput('');
       setShowSuggestions(false);
@@ -55,7 +55,7 @@ export default function TickerSelector({ symbols, onAdd, onRemove }: Props) {
       </div>
 
       {/* Input */}
-      {symbols.length < 10 && (
+      {symbols.length < 15 && (
         <div className="relative">
           <input
             value={input}

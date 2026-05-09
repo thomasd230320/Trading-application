@@ -1,15 +1,24 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useMarketData } from '@/lib/hooks/useMarketData';
 import StockCard from '@/components/StockCard';
 import TickerSelector from '@/components/TickerSelector';
 import SignalTable from '@/components/SignalTable';
 import SignalBadge from '@/components/SignalBadge';
 import ActionPanel from '@/components/ActionPanel';
+import PositionsPanel from '@/components/PositionsPanel';
 import type { SymbolData } from '@/lib/types';
+import type { Recommendation } from '@/lib/strategy';
+import {
+  type Position,
+  loadPositions,
+  savePositions,
+  makePosition,
+} from '@/lib/positions';
 
 const DEFAULT_SYMBOLS = ['AAPL', 'TSLA', 'NVDA', 'MSFT', 'BTC-USD', 'ETH-USD', 'SOL-USD'];
+const WATCHLIST_KEY = 'tradeview.watchlist.v1';
 
 function TickerBar({ symbols }: { symbols: SymbolData[] }) {
   if (!symbols.length) return null;
@@ -52,8 +61,68 @@ function UpdatePulse({ timestamp }: { timestamp?: number }) {
 }
 
 export default function DashboardPage() {
-  const [symbols, setSymbols] = useState(DEFAULT_SYMBOLS);
+  const [symbols, setSymbols] = useState<string[]>(DEFAULT_SYMBOLS);
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(WATCHLIST_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.every(x => typeof x === 'string') && parsed.length > 0) {
+          setSymbols(parsed);
+        }
+      }
+    } catch {}
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    try { localStorage.setItem(WATCHLIST_KEY, JSON.stringify(symbols)); } catch {}
+  }, [symbols, hydrated]);
+
   const { data, loading, refreshing, error, refresh } = useMarketData(symbols);
+
+  const [positions, setPositions] = useState<Position[]>([]);
+  useEffect(() => { setPositions(loadPositions()); }, []);
+  useEffect(() => { if (hydrated) savePositions(positions); }, [positions, hydrated]);
+
+  const priceMap = useMemo(() => {
+    const m: Record<string, number> = {};
+    data?.symbols.forEach(s => { m[s.symbol] = s.price; });
+    return m;
+  }, [data]);
+
+  const openSymbols = useMemo(
+    () => new Set(positions.filter(p => p.status === 'open').map(p => p.symbol)),
+    [positions]
+  );
+
+  function handleTakeTrade(rec: Recommendation, units: number) {
+    if (rec.action === 'HOLD' || rec.stopLoss == null) return;
+    const pos = makePosition({
+      symbol: rec.symbol,
+      side: rec.action === 'BUY' ? 'LONG' : 'SHORT',
+      strategy: rec.chosenLabel,
+      entryPrice: rec.entry,
+      units,
+      stopLoss: rec.stopLoss,
+      takeProfit: rec.takeProfit,
+    });
+    setPositions(prev => [pos, ...prev]);
+  }
+
+  function handleClose(id: string, exitPrice: number, reason: 'manual' | 'stop' | 'target') {
+    setPositions(prev => prev.map(p => p.id === id
+      ? { ...p, status: 'closed', exitPrice, exitTime: Date.now(), exitReason: reason }
+      : p
+    ));
+  }
+
+  function handleDelete(id: string) {
+    setPositions(prev => prev.filter(p => p.id !== id));
+  }
 
   const totalBuy = data?.symbols.reduce((acc, s) => {
     const sigs = Object.values(s.signals);
@@ -132,7 +201,23 @@ export default function DashboardPage() {
 
       {/* Action plan */}
       {data && data.symbols.length > 0 && (
-        <ActionPanel symbols={data.symbols} onRefresh={refresh} refreshing={refreshing} />
+        <ActionPanel
+          symbols={data.symbols}
+          onRefresh={refresh}
+          refreshing={refreshing}
+          onTakeTrade={handleTakeTrade}
+          openSymbols={openSymbols}
+        />
+      )}
+
+      {/* Positions */}
+      {hydrated && (
+        <PositionsPanel
+          positions={positions}
+          priceMap={priceMap}
+          onClose={handleClose}
+          onDelete={handleDelete}
+        />
       )}
 
       {/* Cards grid */}
