@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
     .split(',')
     .map(s => s.trim().toUpperCase())
     .filter(s => SYMBOL_PATTERN.test(s))
-    .slice(0, 15);
+    .slice(0, 30);
 
   if (!symbols.length) {
     return NextResponse.json({ error: 'No valid symbols' }, { status: 400 });
