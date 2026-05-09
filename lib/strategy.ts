@@ -13,6 +13,7 @@ export interface Recommendation {
   confidence: number;
   chosenStrategy: StrategyKey;
   chosenLabel: string;
+  chosenScore: number;
   perf: StrategyPerformance[];
   fallback: boolean;
   entry: number;
@@ -126,6 +127,7 @@ export function getRecommendation(s: SymbolData, riskPercent: number): Recommend
     confidence,
     chosenStrategy: chosen.strategy,
     chosenLabel: chosen.label,
+    chosenScore: chosen.score,
     perf: perfArr,
     fallback,
     entry,
@@ -188,12 +190,10 @@ export function rankRecommendations(recs: Recommendation[]): {
   buys: Recommendation[];
   sells: Recommendation[];
 } {
-  const buys = recs
-    .filter(r => r.action === 'BUY')
-    .sort((a, b) => b.confidence - a.confidence);
-  const sells = recs
-    .filter(r => r.action === 'SELL')
-    .sort((a, b) => b.confidence - a.confidence);
+  const byScore = (a: Recommendation, b: Recommendation) =>
+    b.chosenScore - a.chosenScore || b.confidence - a.confidence;
+  const buys = recs.filter(r => r.action === 'BUY').sort(byScore);
+  const sells = recs.filter(r => r.action === 'SELL').sort(byScore);
   return { buys, sells };
 }
 

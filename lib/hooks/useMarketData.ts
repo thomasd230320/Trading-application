@@ -3,9 +3,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { MarketDataResponse } from '@/lib/types';
 
-const POLL_INTERVAL = 5000;
+const DEFAULT_POLL_INTERVAL = 5000;
 
-export function useMarketData(symbols: string[]) {
+export function useMarketData(symbols: string[], pollInterval: number = DEFAULT_POLL_INTERVAL) {
   const [data, setData] = useState<MarketDataResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -43,19 +43,19 @@ export function useMarketData(symbols: string[]) {
   const refresh = useCallback(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
     fetchData({ bust: true });
-    intervalRef.current = setInterval(fetchData, POLL_INTERVAL);
-  }, [fetchData]);
+    intervalRef.current = setInterval(fetchData, pollInterval);
+  }, [fetchData, pollInterval]);
 
   useEffect(() => {
     mountedRef.current = true;
     fetchData();
-    intervalRef.current = setInterval(fetchData, POLL_INTERVAL);
+    intervalRef.current = setInterval(fetchData, pollInterval);
     return () => {
       mountedRef.current = false;
       if (intervalRef.current) clearInterval(intervalRef.current);
       if (abortRef.current) abortRef.current.abort();
     };
-  }, [fetchData]);
+  }, [fetchData, pollInterval]);
 
   return { data, loading, refreshing, error, refresh };
 }

@@ -16,6 +16,7 @@ import {
   savePositions,
   makePosition,
 } from '@/lib/positions';
+import { SCAN_UNIVERSE, SCAN_POLL_INTERVAL_MS } from '@/lib/scanner';
 
 const DEFAULT_SYMBOLS = ['AAPL', 'TSLA', 'NVDA', 'MSFT', 'BTC-USD', 'ETH-USD', 'SOL-USD'];
 const WATCHLIST_KEY = 'tradeview.watchlist.v1';
@@ -84,15 +85,29 @@ export default function DashboardPage() {
 
   const { data, loading, refreshing, error, refresh } = useMarketData(symbols);
 
+  const scanSymbols = useMemo(() => [...SCAN_UNIVERSE], []);
+  const {
+    data: scanData,
+    refresh: scanRefresh,
+    refreshing: scanRefreshing,
+  } = useMarketData(scanSymbols, SCAN_POLL_INTERVAL_MS);
+
   const [positions, setPositions] = useState<Position[]>([]);
   useEffect(() => { setPositions(loadPositions()); }, []);
   useEffect(() => { if (hydrated) savePositions(positions); }, [positions, hydrated]);
 
   const priceMap = useMemo(() => {
     const m: Record<string, number> = {};
+    scanData?.symbols.forEach(s => { m[s.symbol] = s.price; });
     data?.symbols.forEach(s => { m[s.symbol] = s.price; });
     return m;
-  }, [data]);
+  }, [data, scanData]);
+
+  const watchlistSet = useMemo(() => new Set(symbols), [symbols]);
+
+  function addToWatchlist(symbol: string) {
+    setSymbols(prev => prev.includes(symbol) || prev.length >= 15 ? prev : [...prev, symbol]);
+  }
 
   const openSymbols = useMemo(
     () => new Set(positions.filter(p => p.status === 'open').map(p => p.symbol)),
@@ -111,6 +126,7 @@ export default function DashboardPage() {
       takeProfit: rec.takeProfit,
     });
     setPositions(prev => [pos, ...prev]);
+    addToWatchlist(rec.symbol);
   }
 
   function handleClose(id: string, exitPrice: number, reason: 'manual' | 'stop' | 'target') {
@@ -199,14 +215,17 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Action plan */}
-      {data && data.symbols.length > 0 && (
+      {/* Action plan — scans the broader universe, not just the watchlist */}
+      {scanData && scanData.symbols.length > 0 && (
         <ActionPanel
-          symbols={data.symbols}
-          onRefresh={refresh}
-          refreshing={refreshing}
+          symbols={scanData.symbols}
+          onRefresh={() => { scanRefresh(); refresh(); }}
+          refreshing={scanRefreshing || refreshing}
           onTakeTrade={handleTakeTrade}
           openSymbols={openSymbols}
+          watchlistSymbols={watchlistSet}
+          onAddToWatchlist={addToWatchlist}
+          universeSize={SCAN_UNIVERSE.length}
         />
       )}
 

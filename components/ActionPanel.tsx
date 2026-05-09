@@ -99,12 +99,16 @@ function RecCard({
   ddCap,
   onTakeTrade,
   alreadyOpen,
+  inWatchlist,
+  onAddToWatchlist,
 }: {
   rec: Recommendation;
   settings: Settings;
   ddCap: number;
   onTakeTrade?: (rec: Recommendation, units: number) => void;
   alreadyOpen?: boolean;
+  inWatchlist?: boolean;
+  onAddToWatchlist?: (symbol: string) => void;
 }) {
   const isFractional = rec.symbol.includes('-');
   const pos = calculatePositionSize(rec, settings.accountSize, settings.riskPercent, isFractional);
@@ -127,6 +131,15 @@ function RecCard({
             <span className="text-[10px] text-blue-400 bg-blue-500/10 border border-blue-500/30 px-1.5 py-0.5 rounded">
               via {rec.chosenLabel}
             </span>
+            {onAddToWatchlist && !inWatchlist && (
+              <button
+                onClick={() => onAddToWatchlist(rec.symbol)}
+                className="text-[10px] text-gray-400 hover:text-white hover:bg-gray-700 border border-gray-700 hover:border-gray-600 px-1.5 py-0.5 rounded transition-colors"
+                title="Add to watchlist for live charts and price tracking"
+              >
+                + watchlist
+              </button>
+            )}
           </div>
           <div className="text-gray-500 text-xs mt-0.5">{rec.reason}</div>
         </div>
@@ -218,9 +231,21 @@ interface ActionPanelProps {
   refreshing?: boolean;
   onTakeTrade?: (rec: Recommendation, units: number) => void;
   openSymbols?: Set<string>;
+  watchlistSymbols?: Set<string>;
+  onAddToWatchlist?: (symbol: string) => void;
+  universeSize?: number;
 }
 
-export default function ActionPanel({ symbols, onRefresh, refreshing = false, onTakeTrade, openSymbols }: ActionPanelProps) {
+export default function ActionPanel({
+  symbols,
+  onRefresh,
+  refreshing = false,
+  onTakeTrade,
+  openSymbols,
+  watchlistSymbols,
+  onAddToWatchlist,
+  universeSize,
+}: ActionPanelProps) {
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [hydrated, setHydrated] = useState(false);
 
@@ -278,7 +303,7 @@ export default function ActionPanel({ symbols, onRefresh, refreshing = false, on
           <div>
             <h2 className="text-base font-semibold text-white">Action Plan</h2>
             <p className="text-xs text-gray-500 mt-0.5">
-              {riskTier} · picks the top strategy with {ddText}
+              Scanning {universeSize ?? symbols.length} symbols · {riskTier} ({ddText})
             </p>
           </div>
           {onRefresh && (
@@ -353,6 +378,8 @@ export default function ActionPanel({ symbols, onRefresh, refreshing = false, on
                     ddCap={ddCap}
                     onTakeTrade={onTakeTrade}
                     alreadyOpen={openSymbols?.has(r.symbol)}
+                    inWatchlist={watchlistSymbols?.has(r.symbol)}
+                    onAddToWatchlist={onAddToWatchlist}
                   />
                 ))}
               </div>
@@ -370,6 +397,8 @@ export default function ActionPanel({ symbols, onRefresh, refreshing = false, on
                     ddCap={ddCap}
                     onTakeTrade={onTakeTrade}
                     alreadyOpen={openSymbols?.has(r.symbol)}
+                    inWatchlist={watchlistSymbols?.has(r.symbol)}
+                    onAddToWatchlist={onAddToWatchlist}
                   />
                 ))}
               </div>
