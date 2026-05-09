@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 const NAV = [
   {
@@ -64,65 +65,122 @@ const NAV = [
   },
 ];
 
+function Brand() {
+  return (
+    <div className="flex items-center gap-2.5">
+      <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shrink-0">
+        <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M3.5 18.5l6-6 4 4L20 7" stroke="currentColor" strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+        </svg>
+      </div>
+      <div>
+        <div className="text-white font-bold text-sm leading-tight">TradeView</div>
+        <div className="text-gray-500 text-[10px]">Live Strategies</div>
+      </div>
+    </div>
+  );
+}
+
 export default function Navbar() {
   const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => { setOpen(false); }, [pathname]);
+
+  useEffect(() => {
+    document.body.style.overflow = open ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [open]);
+
+  const links = (
+    <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+      {NAV.map(({ href, label, sublabel, icon }) => {
+        const active = pathname === href;
+        return (
+          <Link
+            key={href}
+            href={href}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all group ${
+              active
+                ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30'
+                : 'text-gray-400 hover:bg-gray-800 hover:text-white border border-transparent'
+            }`}
+          >
+            <span className={active ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-300'}>
+              {icon}
+            </span>
+            <div className="min-w-0">
+              <div className="text-sm font-medium truncate">{label}</div>
+              {sublabel && (
+                <div className="text-[10px] text-gray-600 group-hover:text-gray-500 truncate leading-tight">
+                  {sublabel}
+                </div>
+              )}
+            </div>
+          </Link>
+        );
+      })}
+    </nav>
+  );
+
+  const footer = (
+    <div className="px-4 py-4 border-t border-gray-800">
+      <div className="flex items-center gap-2 text-xs text-gray-500">
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+        Live · 5s refresh
+      </div>
+      <div className="text-[10px] text-gray-700 mt-1">Yahoo Finance data</div>
+    </div>
+  );
 
   return (
-    <aside className="fixed left-0 top-0 h-full w-56 bg-gray-900 border-r border-gray-800 flex flex-col z-40">
-      {/* Logo */}
-      <div className="px-5 py-5 border-b border-gray-800">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-            <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M3.5 18.5l6-6 4 4L20 7" stroke="currentColor" strokeWidth="2"
-                strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+    <>
+      {/* Mobile top bar */}
+      <header className="md:hidden fixed top-0 left-0 right-0 h-14 bg-gray-900/95 backdrop-blur border-b border-gray-800 flex items-center justify-between px-4 z-40">
+        <Brand />
+        <button
+          aria-label={open ? 'Close menu' : 'Open menu'}
+          aria-expanded={open}
+          onClick={() => setOpen(o => !o)}
+          className="w-10 h-10 -mr-2 inline-flex items-center justify-center rounded-lg text-gray-300 hover:bg-gray-800 active:bg-gray-700"
+        >
+          {open ? (
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 6l12 12M6 18L18 6" />
             </svg>
-          </div>
-          <div>
-            <div className="text-white font-bold text-sm leading-tight">TradeView</div>
-            <div className="text-gray-500 text-[10px]">Live Strategies</div>
-          </div>
-        </div>
-      </div>
+          ) : (
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7h16M4 12h16M4 17h16" />
+            </svg>
+          )}
+        </button>
+      </header>
 
-      {/* Nav links */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        {NAV.map(({ href, label, sublabel, icon }) => {
-          const active = pathname === href;
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all group ${
-                active
-                  ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30'
-                  : 'text-gray-400 hover:bg-gray-800 hover:text-white border border-transparent'
-              }`}
-            >
-              <span className={active ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-300'}>
-                {icon}
-              </span>
-              <div className="min-w-0">
-                <div className="text-sm font-medium truncate">{label}</div>
-                {sublabel && (
-                  <div className="text-[10px] text-gray-600 group-hover:text-gray-500 truncate leading-tight">
-                    {sublabel}
-                  </div>
-                )}
-              </div>
-            </Link>
-          );
-        })}
-      </nav>
-
-      {/* Footer */}
-      <div className="px-4 py-4 border-t border-gray-800">
-        <div className="flex items-center gap-2 text-xs text-gray-500">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          Live · 5s refresh
-        </div>
-        <div className="text-[10px] text-gray-700 mt-1">Yahoo Finance data</div>
+      {/* Mobile drawer */}
+      <div
+        className={`md:hidden fixed inset-0 z-40 transition-opacity ${open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+        onClick={() => setOpen(false)}
+      >
+        <div className="absolute inset-0 bg-black/60" />
       </div>
-    </aside>
+      <aside
+        className={`md:hidden fixed top-14 left-0 bottom-0 w-72 max-w-[85vw] bg-gray-900 border-r border-gray-800 flex flex-col z-50 transform transition-transform duration-200 ${
+          open ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        {links}
+        {footer}
+      </aside>
+
+      {/* Desktop sidebar */}
+      <aside className="hidden md:flex fixed left-0 top-0 h-full w-56 bg-gray-900 border-r border-gray-800 flex-col z-40">
+        <div className="px-5 py-5 border-b border-gray-800">
+          <Brand />
+        </div>
+        {links}
+        {footer}
+      </aside>
+    </>
   );
 }

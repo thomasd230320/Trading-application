@@ -1,17 +1,7 @@
-import _yahooFinance from 'yahoo-finance2';
+import YahooFinance from 'yahoo-finance2';
 import type { OHLCVBar } from './types';
 
-// yahoo-finance2 exports an instance but its .d.ts types it as a constructor.
-// Cast to a simple interface to avoid the 'this' context type error.
-interface YF {
-  quote(symbol: string): Promise<unknown>;
-  historical(symbol: string, opts: {
-    period1: Date;
-    period2: Date;
-    interval: '1d' | '1wk' | '1mo';
-  }): Promise<unknown[]>;
-}
-const yf = _yahooFinance as unknown as YF;
+const yf = new YahooFinance({ suppressNotices: ['yahooSurvey', 'ripHistorical'] });
 
 interface CacheEntry<T> {
   data: T;
@@ -35,6 +25,15 @@ export async function fetchQuote(symbol: string): Promise<AnyData> {
   return data;
 }
 
+interface ChartQuote {
+  date: Date | string;
+  open: number | null;
+  high: number | null;
+  low: number | null;
+  close: number | null;
+  volume: number | null;
+}
+
 export async function fetchHistorical(symbol: string, days = 90): Promise<OHLCVBar[]> {
   const key = `${symbol}:${days}`;
   const cached = histCache.get(key);
@@ -43,22 +42,24 @@ export async function fetchHistorical(symbol: string, days = 90): Promise<OHLCVB
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - days);
 
-  const raw = (await yf.historical(symbol, {
+  const result = await yf.chart(symbol, {
     period1: startDate,
     period2: new Date(),
     interval: '1d',
-  })) as AnyData[];
+  });
 
-  const bars: OHLCVBar[] = raw
+  const quotes = (result?.quotes ?? []) as ChartQuote[];
+
+  const bars: OHLCVBar[] = quotes
     .filter(r => r.open != null && r.close != null)
-    .sort((a, b) => new Date(a.date as string).getTime() - new Date(b.date as string).getTime())
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .map(r => ({
-      time: Math.floor(new Date(r.date as string).getTime() / 1000),
+      time: Math.floor(new Date(r.date).getTime() / 1000),
       open: r.open as number,
       high: r.high as number,
       low: r.low as number,
       close: r.close as number,
-      volume: (r.volume as number) ?? 0,
+      volume: r.volume ?? 0,
     }));
 
   histCache.set(key, { data: bars, fetchedAt: Date.now() });

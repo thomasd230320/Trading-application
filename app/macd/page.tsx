@@ -19,14 +19,14 @@ function MACDContent() {
   const histPositive = (macd?.latestHistogram ?? 0) >= 0;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-5">
+    <div className="max-w-6xl mx-auto space-y-4 sm:space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-2xl font-bold text-white">MACD Strategy</h1>
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <h1 className="text-xl sm:text-2xl font-bold text-white">MACD Strategy</h1>
             <span className="text-xs text-gray-500 bg-gray-800 border border-gray-700 px-2 py-0.5 rounded-full">12 / 26 / 9</span>
           </div>
-          <p className="text-gray-500 text-sm">Moving Average Convergence Divergence — crossover of MACD and Signal lines</p>
+          <p className="text-gray-500 text-xs sm:text-sm">Moving Average Convergence Divergence — crossover of MACD and Signal lines</p>
         </div>
         <SymbolPicker value={symbol} onChange={setSymbol} />
       </div>
@@ -90,7 +90,7 @@ function MACDContent() {
         />
       )}
 
-      <div className="grid grid-cols-3 gap-3 text-xs text-center">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 text-xs text-center">
         <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg py-3 px-4">
           <div className="text-emerald-400 font-semibold mb-1">Bullish Crossover · BUY</div>
           <div className="text-gray-500">MACD crosses above Signal — bullish momentum building</div>

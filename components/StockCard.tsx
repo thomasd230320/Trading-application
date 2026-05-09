@@ -35,7 +35,7 @@ export default function StockCard({ data }: { data: SymbolData }) {
   ] as const;
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 hover:border-gray-700 transition-all hover:shadow-lg hover:shadow-black/20 group">
+    <div className="bg-gray-900 border border-gray-800 rounded-xl p-3 sm:p-4 hover:border-gray-700 transition-all hover:shadow-lg hover:shadow-black/20 group">
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="min-w-0">
@@ -73,7 +73,7 @@ export default function StockCard({ data }: { data: SymbolData }) {
           <Link
             key={key}
             href={`${STRATEGY_LINKS[key]}?symbol=${data.symbol}`}
-            className="bg-gray-800 hover:bg-gray-750 border border-gray-700/50 hover:border-gray-600 rounded-lg p-2 transition-all"
+            className="bg-gray-800 active:bg-gray-700 hover:bg-gray-750 border border-gray-700/50 hover:border-gray-600 rounded-lg p-2 transition-all min-h-[44px]"
           >
             <div className="flex items-center justify-between mb-1">
               <span className="text-[10px] text-gray-500 font-medium">{STRATEGY_LABELS[key]}</span>

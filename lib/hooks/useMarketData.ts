@@ -21,9 +21,13 @@ export function useMarketData(symbols: string[]) {
       const res = await fetch(`/api/market-data?symbols=${symbolKey}`, {
         signal: abortRef.current.signal,
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json: MarketDataResponse = await res.json();
-      if (mountedRef.current) { setData(json); setLoading(false); setError(null); }
+      const json: MarketDataResponse = await res.json().catch(() => ({ timestamp: Date.now(), symbols: [] }));
+      if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`);
+      if (mountedRef.current) {
+        setData(json);
+        setLoading(false);
+        setError(json.error ?? null);
+      }
     } catch (err: unknown) {
       if (err instanceof Error && err.name === 'AbortError') return;
       if (mountedRef.current) {
