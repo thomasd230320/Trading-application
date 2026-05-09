@@ -16,6 +16,7 @@ const ALLOWED = new Set([
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const symbolsParam = searchParams.get('symbols') ?? 'AAPL,BTC-USD';
+  const bust = searchParams.has('bust');
   const symbols = symbolsParam
     .split(',')
     .map(s => s.trim().toUpperCase())
@@ -29,8 +30,8 @@ export async function GET(req: NextRequest) {
   const results = await Promise.allSettled(
     symbols.map(async (symbol): Promise<SymbolData> => {
       const [quote, bars] = await Promise.all([
-        fetchQuote(symbol),
-        fetchHistorical(symbol, 90),
+        fetchQuote(symbol, bust),
+        fetchHistorical(symbol, 90, bust),
       ]);
 
       const rsi = computeRSI(bars);
