@@ -6,12 +6,7 @@ import type { SymbolData, MarketDataResponse } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
-const ALLOWED = new Set([
-  'AAPL', 'TSLA', 'NVDA', 'MSFT', 'AMZN', 'GOOGL', 'META', 'AMD',
-  'NFLX', 'UBER', 'COIN', 'INTC', 'PLTR', 'SOFI', 'RIVN',
-  'BTC-USD', 'ETH-USD', 'SOL-USD', 'BNB-USD', 'DOGE-USD', 'XRP-USD',
-  'SPY', 'QQQ', 'IWM', 'DIA',
-]);
+const SYMBOL_PATTERN = /^[A-Z0-9]{1,10}(?:[.-][A-Z0-9]{1,10})?$/;
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -20,8 +15,8 @@ export async function GET(req: NextRequest) {
   const symbols = symbolsParam
     .split(',')
     .map(s => s.trim().toUpperCase())
-    .filter(s => ALLOWED.has(s))
-    .slice(0, 10);
+    .filter(s => SYMBOL_PATTERN.test(s))
+    .slice(0, 15);
 
   if (!symbols.length) {
     return NextResponse.json({ error: 'No valid symbols' }, { status: 400 });
