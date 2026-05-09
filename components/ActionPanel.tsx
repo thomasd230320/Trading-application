@@ -245,10 +245,9 @@ export default function ActionPanel({ symbols, onRefresh, refreshing = false }: 
   const hasActionable = buys.length > 0 || sells.length > 0;
 
   const riskTier =
-    settings.riskPercent <= 1 ? 'Conservative'
-    : settings.riskPercent <= 3 ? 'Moderate'
-    : settings.riskPercent <= 10 ? 'Aggressive'
-    : 'Speculative';
+    settings.riskPercent <= 25 ? 'Conservative'
+    : settings.riskPercent <= 50 ? 'Moderate'
+    : 'Aggressive';
   const ddText = Number.isFinite(ddCap) ? `≤ ${ddCap}% historical drawdown` : 'no drawdown limit';
 
   return (

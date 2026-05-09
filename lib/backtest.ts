@@ -183,7 +183,7 @@ function summarize(strategy: StrategyKey, trades: Trade[]): StrategyPerformance 
 
   const ddFloor = Math.max(maxDrawdown, 0.01);
   const baseScore = (totalReturn * winRate) / ddFloor;
-  const score = trades.length < 5 ? 0 : Math.max(0, baseScore);
+  const score = trades.length < 2 ? 0 : Math.max(0, baseScore);
 
   return {
     strategy,

@@ -23,9 +23,8 @@ export interface Recommendation {
 }
 
 export function maxAllowedDrawdown(riskPercent: number): number {
-  if (riskPercent <= 1) return 10;
-  if (riskPercent <= 3) return 25;
-  if (riskPercent <= 10) return 50;
+  if (riskPercent <= 25) return 12;
+  if (riskPercent <= 50) return 30;
   return Infinity;
 }
 
@@ -75,7 +74,7 @@ export function getRecommendation(s: SymbolData, riskPercent: number): Recommend
   const perfArr = (Object.values(perfMap) as StrategyPerformance[]).sort((a, b) => b.score - a.score);
 
   const ddCap = maxAllowedDrawdown(riskPercent);
-  const eligible = perfArr.filter(p => p.trades >= 5 && p.maxDrawdown <= ddCap && p.score > 0);
+  const eligible = perfArr.filter(p => p.trades >= 2 && p.maxDrawdown <= ddCap && p.score > 0);
 
   let chosen: StrategyPerformance;
   let fallback = false;
