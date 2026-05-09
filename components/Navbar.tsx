@@ -3,6 +3,9 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import UserCard from './UserCard';
+
+const HIDE_ON = ['/login', '/signup'];
 
 const NAV = [
   {
@@ -93,6 +96,8 @@ export default function Navbar() {
     return () => { document.body.style.overflow = ''; };
   }, [open]);
 
+  if (HIDE_ON.some(p => pathname === p || pathname.startsWith(p + '/'))) return null;
+
   const links = (
     <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
       {NAV.map(({ href, label, sublabel, icon }) => {
@@ -125,13 +130,16 @@ export default function Navbar() {
   );
 
   const footer = (
-    <div className="px-4 py-4 border-t border-gray-800">
-      <div className="flex items-center gap-2 text-xs text-gray-500">
-        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-        Live · 5s refresh
+    <>
+      <UserCard />
+      <div className="px-4 py-4 border-t border-gray-800">
+        <div className="flex items-center gap-2 text-xs text-gray-500">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          Live · 5s refresh
+        </div>
+        <div className="text-[10px] text-gray-700 mt-1">Yahoo Finance data</div>
       </div>
-      <div className="text-[10px] text-gray-700 mt-1">Yahoo Finance data</div>
-    </div>
+    </>
   );
 
   return (
