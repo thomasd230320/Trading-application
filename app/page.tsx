@@ -53,7 +53,7 @@ function UpdatePulse({ timestamp }: { timestamp?: number }) {
 
 export default function DashboardPage() {
   const [symbols, setSymbols] = useState(DEFAULT_SYMBOLS);
-  const { data, loading, error } = useMarketData(symbols);
+  const { data, loading, refreshing, error, refresh } = useMarketData(symbols);
 
   const totalBuy = data?.symbols.reduce((acc, s) => {
     const sigs = Object.values(s.signals);
@@ -131,7 +131,9 @@ export default function DashboardPage() {
       )}
 
       {/* Action plan */}
-      {data && data.symbols.length > 0 && <ActionPanel symbols={data.symbols} />}
+      {data && data.symbols.length > 0 && (
+        <ActionPanel symbols={data.symbols} onRefresh={refresh} refreshing={refreshing} />
+      )}
 
       {/* Cards grid */}
       {data && (

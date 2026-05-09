@@ -8,19 +8,20 @@ const POLL_INTERVAL = 5000;
 export function useMarketData(symbols: string[]) {
   const [data, setData] = useState<MarketDataResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const mountedRef = useRef(true);
   const symbolKey = symbols.join(',');
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (opts: { bust?: boolean } = {}) => {
     if (abortRef.current) abortRef.current.abort();
     abortRef.current = new AbortController();
+    if (opts.bust && mountedRef.current) setRefreshing(true);
     try {
-      const res = await fetch(`/api/market-data?symbols=${symbolKey}`, {
-        signal: abortRef.current.signal,
-      });
+      const url = `/api/market-data?symbols=${symbolKey}${opts.bust ? `&bust=${Date.now()}` : ''}`;
+      const res = await fetch(url, { signal: abortRef.current.signal, cache: 'no-store' });
       const json: MarketDataResponse = await res.json().catch(() => ({ timestamp: Date.now(), symbols: [] }));
       if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`);
       if (mountedRef.current) {
@@ -34,8 +35,16 @@ export function useMarketData(symbols: string[]) {
         setError(err instanceof Error ? err.message : 'Fetch failed');
         setLoading(false);
       }
+    } finally {
+      if (mountedRef.current && opts.bust) setRefreshing(false);
     }
   }, [symbolKey]);
+
+  const refresh = useCallback(() => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    fetchData({ bust: true });
+    intervalRef.current = setInterval(fetchData, POLL_INTERVAL);
+  }, [fetchData]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -48,7 +57,7 @@ export function useMarketData(symbols: string[]) {
     };
   }, [fetchData]);
 
-  return { data, loading, error };
+  return { data, loading, refreshing, error, refresh };
 }
 
 export function useSignalHistory(symbol?: string, strategy?: string, limit = 20) {

@@ -16,9 +16,9 @@ const histCache = new Map<string, CacheEntry<OHLCVBar[]>>();
 const QUOTE_TTL = 4500;
 const HIST_TTL = 60_000;
 
-export async function fetchQuote(symbol: string): Promise<AnyData> {
+export async function fetchQuote(symbol: string, bust = false): Promise<AnyData> {
   const cached = quoteCache.get(symbol);
-  if (cached && Date.now() - cached.fetchedAt < QUOTE_TTL) return cached.data;
+  if (!bust && cached && Date.now() - cached.fetchedAt < QUOTE_TTL) return cached.data;
 
   const data = (await yf.quote(symbol)) as AnyData;
   quoteCache.set(symbol, { data, fetchedAt: Date.now() });
@@ -34,10 +34,10 @@ interface ChartQuote {
   volume: number | null;
 }
 
-export async function fetchHistorical(symbol: string, days = 90): Promise<OHLCVBar[]> {
+export async function fetchHistorical(symbol: string, days = 90, bust = false): Promise<OHLCVBar[]> {
   const key = `${symbol}:${days}`;
   const cached = histCache.get(key);
-  if (cached && Date.now() - cached.fetchedAt < HIST_TTL) return cached.data;
+  if (!bust && cached && Date.now() - cached.fetchedAt < HIST_TTL) return cached.data;
 
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - days);

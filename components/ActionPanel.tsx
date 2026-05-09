@@ -120,7 +120,13 @@ function RecCard({
   );
 }
 
-export default function ActionPanel({ symbols }: { symbols: SymbolData[] }) {
+interface ActionPanelProps {
+  symbols: SymbolData[];
+  onRefresh?: () => void;
+  refreshing?: boolean;
+}
+
+export default function ActionPanel({ symbols, onRefresh, refreshing = false }: ActionPanelProps) {
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [hydrated, setHydrated] = useState(false);
 
@@ -155,11 +161,31 @@ export default function ActionPanel({ symbols }: { symbols: SymbolData[] }) {
   return (
     <div className="bg-gray-900 border border-gray-800 rounded-xl p-3 sm:p-4">
       <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
-        <div>
-          <h2 className="text-base font-semibold text-white">Action Plan</h2>
-          <p className="text-xs text-gray-500 mt-0.5">Aggregated across all four strategies</p>
-        </div>
         <div className="flex items-center gap-2">
+          <div>
+            <h2 className="text-base font-semibold text-white">Action Plan</h2>
+            <p className="text-xs text-gray-500 mt-0.5">Aggregated across all four strategies</p>
+          </div>
+          {onRefresh && (
+            <button
+              onClick={onRefresh}
+              disabled={refreshing}
+              aria-label="Refresh recommendations"
+              className="ml-1 inline-flex items-center justify-center w-9 h-9 rounded-lg bg-gray-800 border border-gray-700 text-gray-300 hover:bg-gray-700 hover:text-white active:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <svg
+                className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M4 4v5h5M20 20v-5h-5M5.5 9A7 7 0 0118.66 7M18.5 15A7 7 0 015.34 17" />
+              </svg>
+            </button>
+          )}
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
           <label className="flex items-center gap-1.5 text-xs text-gray-500">
             <span>Account</span>
             <span className="text-gray-600">$</span>
