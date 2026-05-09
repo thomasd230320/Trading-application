@@ -7,6 +7,7 @@ import { checkActiveMembership, whopErrorMessage } from '@/lib/whop';
 
 export interface AuthResult {
   error?: string;
+  notice?: string;
 }
 
 function safeNext(next: string | null): string {
@@ -19,7 +20,7 @@ const NOT_CONFIGURED: AuthResult = {
   error: 'Login is not configured yet. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to your env vars and redeploy.',
 };
 
-export async function signIn(formData: FormData): Promise<AuthResult> {
+export async function signIn(_prev: AuthResult, formData: FormData): Promise<AuthResult> {
   const email = String(formData.get('email') ?? '').trim().toLowerCase();
   const password = String(formData.get('password') ?? '');
   const next = safeNext(formData.get('next') as string | null);
@@ -38,7 +39,7 @@ export async function signIn(formData: FormData): Promise<AuthResult> {
   redirect(next);
 }
 
-export async function signUp(formData: FormData): Promise<AuthResult> {
+export async function signUp(_prev: AuthResult, formData: FormData): Promise<AuthResult> {
   const email = String(formData.get('email') ?? '').trim().toLowerCase();
   const password = String(formData.get('password') ?? '');
   const next = safeNext(formData.get('next') as string | null);
@@ -55,7 +56,7 @@ export async function signUp(formData: FormData): Promise<AuthResult> {
   if (error) return { error: error.message };
 
   if (!data.session) {
-    return { error: 'Check your email to confirm your account, then sign in.' };
+    return { notice: 'Account created. Check your email to confirm, then sign in.' };
   }
 
   revalidatePath('/', 'layout');
