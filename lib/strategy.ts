@@ -1,20 +1,20 @@
 import type { SymbolData, Signal } from './types';
-
-const STRATEGY_LABEL = {
-  rsi: 'RSI',
-  macd: 'MACD',
-  bollinger: 'BB',
-  maCrossover: 'MA×',
-} as const;
+import {
+  type StrategyKey,
+  type StrategyPerformance,
+  STRATEGY_LABELS,
+  backtestAllStrategies,
+} from './backtest';
 
 export interface Recommendation {
   symbol: string;
   name: string;
   action: Signal;
   confidence: number;
-  buyCount: number;
-  sellCount: number;
-  agreeingStrategies: string[];
+  chosenStrategy: StrategyKey;
+  chosenLabel: string;
+  perf: StrategyPerformance[];
+  fallback: boolean;
   entry: number;
   stopLoss: number | null;
   takeProfit: number | null;
@@ -22,38 +22,35 @@ export interface Recommendation {
   reason: string;
 }
 
-export function getRecommendation(s: SymbolData): Recommendation {
-  const sigs = s.signals;
-  const all = [
-    { name: STRATEGY_LABEL.rsi, sig: sigs.rsi.signal },
-    { name: STRATEGY_LABEL.macd, sig: sigs.macd.signal },
-    { name: STRATEGY_LABEL.bollinger, sig: sigs.bollinger.signal },
-    { name: STRATEGY_LABEL.maCrossover, sig: sigs.maCrossover.signal },
-  ];
-  const buys = all.filter(x => x.sig === 'BUY');
-  const sells = all.filter(x => x.sig === 'SELL');
+export function maxAllowedDrawdown(riskPercent: number): number {
+  if (riskPercent <= 1) return 10;
+  if (riskPercent <= 3) return 25;
+  return Infinity;
+}
 
-  let action: Signal = 'HOLD';
-  let agreeingStrategies: string[] = [];
-  if (buys.length >= 2 && buys.length > sells.length) {
-    action = 'BUY';
-    agreeingStrategies = buys.map(b => b.name);
-  } else if (sells.length >= 2 && sells.length > buys.length) {
-    action = 'SELL';
-    agreeingStrategies = sells.map(b => b.name);
-  } else if (buys.length === 1 && sells.length === 0) {
-    action = 'BUY';
-    agreeingStrategies = buys.map(b => b.name);
-  } else if (sells.length === 1 && buys.length === 0) {
-    action = 'SELL';
-    agreeingStrategies = sells.map(b => b.name);
+export function getRecommendation(s: SymbolData, riskPercent: number): Recommendation {
+  const perfMap = backtestAllStrategies(s);
+  const perfArr = (Object.values(perfMap) as StrategyPerformance[]).sort((a, b) => b.score - a.score);
+
+  const ddCap = maxAllowedDrawdown(riskPercent);
+  const eligible = perfArr.filter(p => p.trades >= 5 && p.maxDrawdown <= ddCap && p.score > 0);
+
+  let chosen: StrategyPerformance;
+  let fallback = false;
+  if (eligible.length > 0) {
+    chosen = eligible[0];
+  } else {
+    const ranked = [...perfArr].sort((a, b) => a.maxDrawdown - b.maxDrawdown);
+    chosen = ranked[0];
+    fallback = true;
   }
 
-  const confidence = Math.max(buys.length, sells.length) / 4;
+  const action = s.signals[chosen.strategy].signal;
 
   const entry = s.price;
-  const bbLower = sigs.bollinger.latestLower || 0;
-  const bbUpper = sigs.bollinger.latestUpper || 0;
+  const bb = s.signals.bollinger;
+  const bbLower = bb.latestLower || 0;
+  const bbUpper = bb.latestUpper || 0;
 
   let stopLoss: number | null = null;
   let takeProfit: number | null = null;
@@ -75,18 +72,21 @@ export function getRecommendation(s: SymbolData): Recommendation {
     rewardToRisk = risk > 0 ? reward / risk : null;
   }
 
-  const reason = agreeingStrategies.length
-    ? `${agreeingStrategies.join(' + ')} signal ${action}`
-    : 'No consensus across strategies';
+  const confidence = action === 'HOLD' ? 0 : Math.max(0.1, Math.min(1, chosen.winRate));
+
+  const reason = action === 'HOLD'
+    ? `${chosen.label} currently neutral on this symbol`
+    : `${chosen.label} signals ${action} (${(chosen.winRate * 100).toFixed(0)}% historical win rate)`;
 
   return {
     symbol: s.symbol,
     name: s.name,
     action,
     confidence,
-    buyCount: buys.length,
-    sellCount: sells.length,
-    agreeingStrategies,
+    chosenStrategy: chosen.strategy,
+    chosenLabel: chosen.label,
+    perf: perfArr,
+    fallback,
     entry,
     stopLoss,
     takeProfit,
@@ -149,9 +149,12 @@ export function rankRecommendations(recs: Recommendation[]): {
 } {
   const buys = recs
     .filter(r => r.action === 'BUY')
-    .sort((a, b) => b.confidence - a.confidence || b.buyCount - a.buyCount);
+    .sort((a, b) => b.confidence - a.confidence);
   const sells = recs
     .filter(r => r.action === 'SELL')
-    .sort((a, b) => b.confidence - a.confidence || b.sellCount - a.sellCount);
+    .sort((a, b) => b.confidence - a.confidence);
   return { buys, sells };
 }
+
+export { STRATEGY_LABELS };
+export type { StrategyKey, StrategyPerformance };
