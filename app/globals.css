@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #030712;
+}
+
+html, body {
+  background: #030712;
+  color: #f9fafb;
+  font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #111827; }
+::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #4B5563; }
+
+/* Ticker tape */
+.ticker-wrap {
+  overflow: hidden;
+  white-space: nowrap;
+}
+.ticker-inner {
+  display: inline-block;
+  animation: ticker 40s linear infinite;
+}
+.ticker-inner:hover { animation-play-state: paused; }
+@keyframes ticker {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* Number flash on update */
+@keyframes flash-green {
+  0%, 100% { background: transparent; }
+  50% { background: rgba(16, 185, 129, 0.15); }
+}
+@keyframes flash-red {
+  0%, 100% { background: transparent; }
+  50% { background: rgba(239, 68, 68, 0.15); }
+}
+.flash-green { animation: flash-green 0.6s ease; }
+.flash-red { animation: flash-red 0.6s ease; }
