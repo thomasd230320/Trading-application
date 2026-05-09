@@ -25,7 +25,49 @@ export interface Recommendation {
 export function maxAllowedDrawdown(riskPercent: number): number {
   if (riskPercent <= 1) return 10;
   if (riskPercent <= 3) return 25;
+  if (riskPercent <= 10) return 50;
   return Infinity;
+}
+
+function chosenStance(s: SymbolData, key: StrategyKey): Signal {
+  switch (key) {
+    case 'rsi': {
+      const v = s.signals.rsi.value;
+      if (v <= 35) return 'BUY';
+      if (v >= 65) return 'SELL';
+      return 'HOLD';
+    }
+    case 'macd': {
+      const m = s.signals.macd.latestMACD;
+      const sig = s.signals.macd.latestSignal;
+      const hist = s.signals.macd.latestHistogram;
+      if (m === 0 && sig === 0) return 'HOLD';
+      if (m > sig && hist >= 0) return 'BUY';
+      if (m < sig && hist <= 0) return 'SELL';
+      return 'HOLD';
+    }
+    case 'bollinger': {
+      const u = s.signals.bollinger.latestUpper;
+      const l = s.signals.bollinger.latestLower;
+      const m = s.signals.bollinger.latestMiddle;
+      const c = s.signals.bollinger.latestClose;
+      if (!u || !l || !m) return 'HOLD';
+      const range = u - l;
+      const pctB = range > 0 ? (c - l) / range : 0.5;
+      if (pctB <= 0.25) return 'BUY';
+      if (pctB >= 0.75) return 'SELL';
+      return 'HOLD';
+    }
+    case 'maCrossover': {
+      const fast = s.signals.maCrossover.latestSMA20;
+      const slow = s.signals.maCrossover.latestSMA50;
+      if (!fast || !slow) return 'HOLD';
+      const spread = ((fast - slow) / slow) * 100;
+      if (spread > 0.25) return 'BUY';
+      if (spread < -0.25) return 'SELL';
+      return 'HOLD';
+    }
+  }
 }
 
 export function getRecommendation(s: SymbolData, riskPercent: number): Recommendation {
@@ -45,7 +87,7 @@ export function getRecommendation(s: SymbolData, riskPercent: number): Recommend
     fallback = true;
   }
 
-  const action = s.signals[chosen.strategy].signal;
+  const action = chosenStance(s, chosen.strategy);
 
   const entry = s.price;
   const bb = s.signals.bollinger;
