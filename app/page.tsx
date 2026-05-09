@@ -6,6 +6,7 @@ import StockCard from '@/components/StockCard';
 import TickerSelector from '@/components/TickerSelector';
 import SignalTable from '@/components/SignalTable';
 import SignalBadge from '@/components/SignalBadge';
+import ActionPanel from '@/components/ActionPanel';
 import type { SymbolData } from '@/lib/types';
 
 const DEFAULT_SYMBOLS = ['AAPL', 'TSLA', 'NVDA', 'MSFT', 'BTC-USD', 'ETH-USD', 'SOL-USD'];
@@ -14,10 +15,10 @@ function TickerBar({ symbols }: { symbols: SymbolData[] }) {
   if (!symbols.length) return null;
   const items = [...symbols, ...symbols];
   return (
-    <div className="ticker-wrap bg-gray-900 border border-gray-800 rounded-xl mb-6 py-2 px-4">
-      <div className="ticker-inner flex items-center gap-8">
+    <div className="ticker-wrap bg-gray-900 border border-gray-800 rounded-xl py-2 px-4">
+      <div className="ticker-track items-center gap-8">
         {items.map((s, i) => (
-          <span key={i} className="flex items-center gap-2 text-sm whitespace-nowrap">
+          <span key={i} className="inline-flex items-center gap-2 text-sm whitespace-nowrap shrink-0">
             <span className="text-gray-400 font-medium">{s.symbol}</span>
             <span className="text-white font-bold">
               ${s.price < 1 ? s.price.toFixed(4) : s.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -128,6 +129,9 @@ export default function DashboardPage() {
           ))}
         </div>
       )}
+
+      {/* Action plan */}
+      {data && data.symbols.length > 0 && <ActionPanel symbols={data.symbols} />}
 
       {/* Cards grid */}
       {data && (
