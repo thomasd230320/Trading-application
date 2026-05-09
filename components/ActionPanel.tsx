@@ -210,7 +210,9 @@ export default function ActionPanel({ symbols, onRefresh, refreshing = false }: 
         const parsed = JSON.parse(raw) as Partial<Settings>;
         setSettings({
           accountSize: typeof parsed.accountSize === 'number' && parsed.accountSize > 0 ? parsed.accountSize : DEFAULT_SETTINGS.accountSize,
-          riskPercent: typeof parsed.riskPercent === 'number' && parsed.riskPercent > 0 ? parsed.riskPercent : DEFAULT_SETTINGS.riskPercent,
+          riskPercent: typeof parsed.riskPercent === 'number' && parsed.riskPercent > 0
+            ? Math.min(100, parsed.riskPercent)
+            : DEFAULT_SETTINGS.riskPercent,
         });
       }
     } catch {}
@@ -242,7 +244,11 @@ export default function ActionPanel({ symbols, onRefresh, refreshing = false }: 
 
   const hasActionable = buys.length > 0 || sells.length > 0;
 
-  const riskTier = settings.riskPercent <= 1 ? 'Conservative' : settings.riskPercent <= 3 ? 'Moderate' : 'Aggressive';
+  const riskTier =
+    settings.riskPercent <= 1 ? 'Conservative'
+    : settings.riskPercent <= 3 ? 'Moderate'
+    : settings.riskPercent <= 10 ? 'Aggressive'
+    : 'Speculative';
   const ddText = Number.isFinite(ddCap) ? `≤ ${ddCap}% historical drawdown` : 'no drawdown limit';
 
   return (
@@ -294,11 +300,11 @@ export default function ActionPanel({ symbols, onRefresh, refreshing = false }: 
               type="number"
               inputMode="decimal"
               min={0.1}
-              max={10}
+              max={100}
               step={0.1}
               value={settings.riskPercent}
-              onChange={e => setSettings(s => ({ ...s, riskPercent: Math.max(0.1, Math.min(10, Number(e.target.value) || 0.1)) }))}
-              className="bg-gray-800 border border-gray-700 text-white text-sm rounded-md px-2 py-1 w-14 focus:outline-none focus:border-blue-500"
+              onChange={e => setSettings(s => ({ ...s, riskPercent: Math.max(0.1, Math.min(100, Number(e.target.value) || 0.1)) }))}
+              className="bg-gray-800 border border-gray-700 text-white text-sm rounded-md px-2 py-1 w-16 focus:outline-none focus:border-blue-500"
             />
             <span className="text-gray-600">%</span>
           </label>
