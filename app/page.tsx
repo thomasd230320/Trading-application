@@ -65,18 +65,18 @@ export default function DashboardPage() {
   }, 0) ?? 0;
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-          <p className="text-gray-500 text-sm mt-0.5">Live signals across all strategies · 5s refresh</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-white">Dashboard</h1>
+          <p className="text-gray-500 text-xs sm:text-sm mt-0.5">Live signals · 5s refresh</p>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-gray-500">Signals:</span>
-            <SignalBadge signal="BUY" size="sm" /> <span className="text-gray-400">{totalBuy}</span>
-            <SignalBadge signal="SELL" size="sm" /> <span className="text-gray-400">{totalSell}</span>
+        <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 flex-wrap">
+          <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
+            <span className="text-gray-500 hidden sm:inline">Signals:</span>
+            <SignalBadge signal="BUY" size="xs" /> <span className="text-gray-400">{totalBuy}</span>
+            <SignalBadge signal="SELL" size="xs" /> <span className="text-gray-400">{totalSell}</span>
           </div>
           <UpdatePulse timestamp={data?.timestamp} />
         </div>

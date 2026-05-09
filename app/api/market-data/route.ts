@@ -65,6 +65,22 @@ export async function GET(req: NextRequest) {
     .filter((r): r is PromiseFulfilledResult<SymbolData> => r.status === 'fulfilled')
     .map(r => r.value);
 
-  const response: MarketDataResponse = { timestamp: Date.now(), symbols: symbolData };
+  const failures = results
+    .map((r, i) => (r.status === 'rejected' ? { symbol: symbols[i], reason: String((r as PromiseRejectedResult).reason?.message ?? r.reason) } : null))
+    .filter((x): x is { symbol: string; reason: string } => x !== null);
+
+  if (!symbolData.length) {
+    const detail = failures[0]?.reason ?? 'Unknown error';
+    return NextResponse.json(
+      { error: `Upstream data unavailable: ${detail}`, timestamp: Date.now(), symbols: [] },
+      { status: 502 }
+    );
+  }
+
+  const response: MarketDataResponse = {
+    timestamp: Date.now(),
+    symbols: symbolData,
+    ...(failures.length ? { error: `Failed: ${failures.map(f => f.symbol).join(', ')}` } : {}),
+  };
   return NextResponse.json(response);
 }

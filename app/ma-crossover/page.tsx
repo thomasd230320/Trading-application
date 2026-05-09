@@ -19,14 +19,14 @@ function MACrossoverContent() {
   const smaSpread = mac ? ((mac.latestSMA20 - mac.latestSMA50) / mac.latestSMA50) * 100 : null;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-5">
+    <div className="max-w-6xl mx-auto space-y-4 sm:space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-2xl font-bold text-white">MA Crossover</h1>
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <h1 className="text-xl sm:text-2xl font-bold text-white">MA Crossover</h1>
             <span className="text-xs text-gray-500 bg-gray-800 border border-gray-700 px-2 py-0.5 rounded-full">SMA 20/50 · EMA 12/26</span>
           </div>
-          <p className="text-gray-500 text-sm">Golden Cross (BUY) when SMA20 crosses above SMA50 · Death Cross (SELL) when it crosses below</p>
+          <p className="text-gray-500 text-xs sm:text-sm">Golden Cross (BUY) when SMA20 crosses above SMA50 · Death Cross (SELL) when it crosses below</p>
         </div>
         <SymbolPicker value={symbol} onChange={setSymbol} />
       </div>
