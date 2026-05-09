@@ -21,13 +21,13 @@ html, body {
 /* Ticker tape */
 .ticker-wrap {
   overflow: hidden;
-  white-space: nowrap;
 }
-.ticker-inner {
-  display: inline-block;
+.ticker-track {
+  display: flex;
+  width: max-content;
   animation: ticker 40s linear infinite;
 }
-.ticker-inner:hover { animation-play-state: paused; }
+.ticker-track:hover { animation-play-state: paused; }
 @keyframes ticker {
   0%   { transform: translateX(0); }
   100% { transform: translateX(-50%); }
