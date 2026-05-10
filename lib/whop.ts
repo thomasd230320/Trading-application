@@ -1,11 +1,23 @@
 interface WhopMembership {
   id: string;
   status?: string;
+  // Whop v2 returns these as plain string IDs
+  product?: string;
+  plan?: string;
+  // Newer Whop APIs / alternative shapes
   product_id?: string;
   plan_id?: string;
+  access_pass_id?: string;
   user_id?: string;
+  user?: string;
   email?: string;
   valid?: boolean;
+}
+
+function membershipProductIds(m: WhopMembership): string[] {
+  return [m.product, m.product_id, m.access_pass_id, m.plan, m.plan_id].filter(
+    (x): x is string => typeof x === 'string' && x.length > 0
+  );
 }
 
 interface WhopListResponse {
@@ -89,19 +101,20 @@ export async function checkActiveMembership(email: string): Promise<WhopGateResu
 
   const matches = forEmail.filter(m => {
     const statusOk = ACCEPTED_STATUSES.has((m.status ?? '').toLowerCase()) || m.valid === true;
-    const productOk = !productId || m.product_id === productId || m.plan_id === productId;
+    const ids = membershipProductIds(m);
+    const productOk = !productId || ids.includes(productId);
     if (!statusOk || !productOk) {
       console.log(
-        `[whop] skipped membership ${m.id}: status=${m.status} valid=${m.valid} product_id=${m.product_id} plan_id=${m.plan_id}`
+        `[whop] skipped membership ${m.id}: status=${m.status} valid=${m.valid} ids=[${ids.join(',')}]`
       );
     }
     return statusOk && productOk;
   });
 
   if (matches.length === 0) {
-    const summary = forEmail.map(m =>
-      `status=${m.status} valid=${m.valid} product_id=${m.product_id} plan_id=${m.plan_id}`
-    ).join('; ');
+    const summary = forEmail
+      .map(m => `status=${m.status} valid=${m.valid} ids=[${membershipProductIds(m).join(',')}]`)
+      .join('; ');
     return {
       ok: false,
       reason: 'inactive',
