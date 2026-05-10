@@ -42,7 +42,7 @@ export async function signIn(_prev: AuthResult, formData: FormData): Promise<Aut
     if (!email || !password) return { error: 'Email and password are required.' };
 
     const gate = await checkActiveMembership(email);
-    if (!gate.ok) return { error: whopErrorMessage(gate.reason) };
+    if (!gate.ok) return { error: whopErrorMessage(gate.reason, gate.detail) };
 
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -68,7 +68,7 @@ export async function signUp(_prev: AuthResult, formData: FormData): Promise<Aut
     if (password.length < 8) return { error: 'Password must be at least 8 characters.' };
 
     const gate = await checkActiveMembership(email);
-    if (!gate.ok) return { error: whopErrorMessage(gate.reason) };
+    if (!gate.ok) return { error: whopErrorMessage(gate.reason, gate.detail) };
 
     const supabase = createClient();
     const { data, error } = await supabase.auth.signUp({ email, password });

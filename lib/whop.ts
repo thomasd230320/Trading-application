@@ -1,6 +1,6 @@
 interface WhopMembership {
   id: string;
-  status: string;
+  status?: string;
   product_id?: string;
   plan_id?: string;
   user_id?: string;
@@ -14,7 +14,12 @@ interface WhopListResponse {
 }
 
 const WHOP_API_BASE = 'https://api.whop.com/api/v2';
-const ACCEPTED_STATUSES = new Set(['active', 'trialing', 'completed']);
+const ACCEPTED_STATUSES = new Set([
+  'active',
+  'trialing',
+  'completed',
+  'paid',
+]);
 
 export interface WhopGateResult {
   ok: boolean;
@@ -26,14 +31,22 @@ export function isWhopConfigured(): boolean {
   return !!process.env.WHOP_API_KEY;
 }
 
+export function isWhopDebug(): boolean {
+  const v = process.env.WHOP_DEBUG;
+  return v === '1' || v === 'true' || v === 'TRUE';
+}
+
 export async function checkActiveMembership(email: string): Promise<WhopGateResult> {
   const apiKey = process.env.WHOP_API_KEY;
   if (!apiKey) return { ok: true, reason: 'not_configured' };
 
-  const productId = process.env.WHOP_PRODUCT_ID;
+  const productId = process.env.WHOP_PRODUCT_ID?.trim() || undefined;
+  const debug = isWhopDebug();
+  const lowerEmail = email.toLowerCase();
 
   const url = new URL(`${WHOP_API_BASE}/memberships`);
   url.searchParams.set('email', email);
+  url.searchParams.set('per_page', '50');
 
   let payload: WhopListResponse;
   try {
@@ -45,35 +58,72 @@ export async function checkActiveMembership(email: string): Promise<WhopGateResu
       cache: 'no-store',
     });
     if (!res.ok) {
-      return { ok: false, reason: 'api_error', detail: `Whop API ${res.status}` };
+      const body = await res.text().catch(() => '');
+      console.error(`[whop] API ${res.status}: ${body.slice(0, 300)}`);
+      return {
+        ok: false,
+        reason: 'api_error',
+        detail: `Whop API ${res.status}${debug && body ? `: ${body.slice(0, 200)}` : ''}`,
+      };
     }
     payload = (await res.json()) as WhopListResponse;
   } catch (err) {
-    return { ok: false, reason: 'api_error', detail: err instanceof Error ? err.message : 'fetch failed' };
+    const msg = err instanceof Error ? err.message : 'fetch failed';
+    console.error('[whop] fetch failed:', msg);
+    return { ok: false, reason: 'api_error', detail: msg };
   }
 
-  const memberships = payload.data ?? [];
-  if (memberships.length === 0) return { ok: false, reason: 'no_membership' };
+  const all = payload.data ?? [];
+  console.log(`[whop] ${email}: API returned ${all.length} memberships`);
 
-  const matches = memberships.filter(m => {
+  // Trust the email param if Whop respected it; otherwise filter ourselves.
+  const forEmail = all.filter(m => !m.email || m.email.trim().toLowerCase() === lowerEmail);
+
+  if (forEmail.length === 0) {
+    return {
+      ok: false,
+      reason: 'no_membership',
+      detail: debug ? `API returned ${all.length} memberships, 0 matched email` : undefined,
+    };
+  }
+
+  const matches = forEmail.filter(m => {
     const statusOk = ACCEPTED_STATUSES.has((m.status ?? '').toLowerCase()) || m.valid === true;
     const productOk = !productId || m.product_id === productId || m.plan_id === productId;
+    if (!statusOk || !productOk) {
+      console.log(
+        `[whop] skipped membership ${m.id}: status=${m.status} valid=${m.valid} product_id=${m.product_id} plan_id=${m.plan_id}`
+      );
+    }
     return statusOk && productOk;
   });
 
-  if (matches.length === 0) return { ok: false, reason: 'inactive' };
+  if (matches.length === 0) {
+    const summary = forEmail.map(m =>
+      `status=${m.status} valid=${m.valid} product_id=${m.product_id} plan_id=${m.plan_id}`
+    ).join('; ');
+    return {
+      ok: false,
+      reason: 'inactive',
+      detail: debug ? `${forEmail.length} membership(s) for email; none matched. ${summary}` : undefined,
+    };
+  }
+
   return { ok: true };
 }
 
-export function whopErrorMessage(reason: WhopGateResult['reason']): string {
-  switch (reason) {
-    case 'no_membership':
-      return 'No Whop membership found for this email. Subscribe via Whop, then sign in.';
-    case 'inactive':
-      return 'Your Whop subscription is not active. Renew it via Whop, then sign in.';
-    case 'api_error':
-      return 'Could not verify your Whop subscription right now. Try again in a moment.';
-    default:
-      return 'Subscription verification failed.';
-  }
+export function whopErrorMessage(reason: WhopGateResult['reason'], detail?: string): string {
+  const base = (() => {
+    switch (reason) {
+      case 'no_membership':
+        return 'No Whop membership found for this email. Subscribe via Whop, then sign in.';
+      case 'inactive':
+        return 'Your Whop subscription is not active. Renew it via Whop, then sign in.';
+      case 'api_error':
+        return 'Could not verify your Whop subscription right now. Try again in a moment.';
+      default:
+        return 'Subscription verification failed.';
+    }
+  })();
+  return detail ? `${base} (${detail})` : base;
 }
